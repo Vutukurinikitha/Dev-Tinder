@@ -7,6 +7,17 @@ const {adminAuth} = require("./middlewares/auth")
 const User = require("./model/user");
 const { validateSignUpData} = require("./utils/validator");
 const bcrypt = require("bcrypt");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+const {userAuth} = require("./middlewares/auth");
+
+const authRouter = require("./routes/auth");
+const ProfileRouter = require("./routes/profile");
+const requestRouter = require("./routes/requests");
+
+app.use("/", authRouter);
+app.use("/", ProfileRouter);
+app.use("/", requestRouter);
 
 connectDB().then(()=>{
     console.log("Db is connected");
@@ -17,32 +28,8 @@ connectDB().then(()=>{
 }).catch((err)=> {
     console.log("Db is not connected", err);
 });
-app.use(express.json())
-app.post("/signup", async (req, res)=> {
-    
-    try{
-        //validate signUp Data
-       
-        //validateSignUpData(req);
-        const {firstName, lastName, emailId , password} = req.body;
-        const passwordHash = await bcrypt.hash(password, 10);
-        console.log(passwordHash);
-        //Creatig an new User instance for this API
-        
-        const userModel = new User({
-            firstName,
-            lastName,
-            emailId,
-            password : passwordHash
-        });
-        await userModel.save();
-
-        res.send("User added success !!");
-    }catch(err){
-        res.status(500).send(err);
-    }
-    
-});
+app.use(express.json());
+app.use(cookieParser());
 
 app.get("/feed", async(req,res) => {
     //const userModel = new User();
@@ -72,24 +59,7 @@ app.patch("/UserUpdate", async (req,res)=> {
 
 })
 
-app.post("/login", async (req, res) => {
-    try{
-        const {emailId, password} = req.body;
-        let user = await  User.findOne({emailId : emailId});
-        if(! user ){
-            throw new Error("EmailID is not present");
-        }
-        //if(validator.isEmail(emailId))
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if(isPasswordValid){
-            res.send("LoginSuccess");
-        }else{
-            throw new Error(" Login fails");
-        }
-    }catch(err){
-        res.status(400).send("Error :" + err.message);
-    }
-})
+
 
 //Creating new Instance of User Model
 
